@@ -1,0 +1,7 @@
+{
+  "name": "Remix: Faciw",
+  "description": "Faciw, uma plataforma inteligente de conexão comercial desenvolvida pela startup Praxus, com segurança de ponta e conformidade total com a LGPD.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

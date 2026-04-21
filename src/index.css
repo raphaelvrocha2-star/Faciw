@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+/* Configure Tailwind v4 to use .dark class for the dark: variant */
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-primary: #6366f1; /* indigo-500 */
+  --color-brand-secondary: #06b6d4; /* cyan-500 */
+  --color-brand-accent: #a855f7; /* purple-500 */
+}
+
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  html, body {
+    @apply transition-colors duration-300;
+  }
+
+  .markdown-body {
+    @apply text-xs leading-relaxed space-y-2;
+  }
+  .markdown-body p {
+    @apply mb-2 last:mb-0 text-slate-700 dark:text-zinc-300;
+  }
+  .markdown-body strong {
+    @apply font-bold text-indigo-600 dark:text-indigo-400 font-sans;
+  }
+  .markdown-body b {
+    @apply font-bold text-indigo-600 dark:text-indigo-400;
+  }
+  .markdown-body ul {
+    @apply list-disc ml-5 mb-3 space-y-1;
+  }
+  .markdown-body ol {
+    @apply list-decimal ml-5 mb-3 space-y-1;
+  }
+  .markdown-body li {
+    @apply mb-0.5;
+  }
+  .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+    @apply font-bold text-slate-900 dark:text-zinc-100 mt-4 mb-2 first:mt-0;
+  }
+  .markdown-body h3 { @apply text-sm; }
+  .markdown-body blockquote {
+    @apply border-l-4 border-indigo-200 dark:border-indigo-900/50 pl-3 py-1 italic text-slate-500 bg-slate-50 dark:bg-zinc-800/50 rounded-r-lg;
+  }
+  .markdown-body code {
+    @apply bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-mono text-[10px] text-indigo-600 dark:text-indigo-400;
+  }
+
+  html {
+    background-color: #f8fafc; /* slate-50 */
+    color: #0f172a; /* slate-900 */
+  }
+
+  html.dark {
+    background-color: #09090b; /* zinc-950 */
+    color: #fafafa; /* zinc-50 */
+  }
+
+  .glass {
+    @apply bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-white/20 dark:border-zinc-800/50;
+  }
+
+  .glass-darker {
+    @apply bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl border border-white/10 dark:border-zinc-800/30;
+  }
+
+  .futuristic-card {
+    @apply bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #27272a;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
+}

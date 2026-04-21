@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "Merchant": {
+      "title": "Merchant",
+      "description": "A business partner selling products on Praxus.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "description": "UID of the user who owns this store" },
+        "name": { "type": "string", "description": "Business name" },
+        "email": { "type": "string", "format": "email" },
+        "address": { "type": "string", "description": "Physical address" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "openingHours": { "type": "string", "description": "Store opening hours (e.g., '08:00 - 18:00')" },
+        "isSubscribed": { "type": "boolean", "description": "Whether the merchant has paid the monthly fee" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        }
+      },
+      "required": ["ownerId", "name", "email", "isSubscribed"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "An item sold by a merchant.",
+      "type": "object",
+      "properties": {
+        "merchantId": { "type": "string", "description": "Reference to the merchant" },
+        "name": { "type": "string", "description": "Product name" },
+        "price": { "type": "number", "description": "Price in BRL" },
+        "unit": { "type": "string", "description": "Unit of measurement (e.g., kg, unit)" },
+        "imageUrl": { "type": "string", "description": "Optional product image URL" },
+        "category": { "type": "string", "description": "Product category" }
+      },
+      "required": ["merchantId", "name", "price", "unit"]
+    },
+    "ShoppingItem": {
+      "title": "ShoppingItem",
+      "description": "An item added to a user's shopping list.",
+      "type": "object",
+      "properties": {
+        "merchantId": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "unit": { "type": "string" },
+        "quantity": { "type": "number" },
+        "addedAt": { "type": "number" }
+      },
+      "required": ["merchantId", "name", "price", "unit", "quantity", "addedAt"]
+    },
+    "ChatSession": {
+      "title": "ChatSession",
+      "description": "A chat conversation session with the AI assistant.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "messages": { 
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string", "enum": ["user", "model"] },
+              "content": { "type": "string" }
+            }
+          }
+        },
+        "recommendations": { "type": "array", "items": { "$ref": "Product" } },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "title", "messages", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/merchants/{merchantId}": {
+      "schema": "Merchant",
+      "description": "Merchant profile data"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Product inventory data"
+    },
+    "/users/{userId}/chat_sessions/{sessionId}": {
+      "schema": "ChatSession",
+      "description": "User's chat history sessions"
+    },
+    "/users/{userId}/chat_sessions/{sessionId}/shopping_list/{itemId}": {
+      "schema": "ShoppingItem",
+      "description": "User's personal shopping list items associated with a chat session"
+    },
+    "/users/{userId}/settings/reminder": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string" },
+          "time": { "type": "string" }
+        },
+        "required": ["date", "time"]
+      },
+      "description": "User's shopping reminder settings"
+    }
+  }
+}

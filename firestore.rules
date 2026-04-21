@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // PILLAR 0: Global Safety Net (Default Deny)
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // PILLAR 3: Global Helpers & Hardening
+    // ===============================================================
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isEmailVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { 
+      return isEmailVerified() && (
+        request.auth.token.email == "raphaelvrocha2@gmail.com"
+      ); 
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // ===============================================================
+    // PILLAR 2: Entity Validators
+    // ===============================================================
+    
+    function isValidMerchant(data) {
+      return data.ownerId == request.auth.uid &&
+             data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             (!('plan' in data) || data.plan in ['free', 'pro', 'premium']) &&
+             data.keys().hasAll(['ownerId', 'name', 'email']) &&
+             data.keys().size() <= 12; // Prevent shadow fields
+    }
+
+    function isValidProduct(data) {
+      return isValidId(data.merchantId) &&
+             data.name is string && data.name.size() >= 2 && data.name.size() <= 150 &&
+             data.price is number && data.price >= 0 && data.price < 1000000 &&
+             data.unit is string && data.unit.size() <= 20 &&
+             data.keys().hasAll(['merchantId', 'name', 'price', 'unit']);
+    }
+
+    function isValidChatSession(data) {
+      return data.title is string && data.title.size() <= 100 &&
+             data.messages is list && data.messages.size() <= 100 &&
+             data.createdAt is number &&
+             data.keys().hasAll(['title', 'messages', 'createdAt']);
+    }
+
+    function isValidShoppingItem(data) {
+      return isValidId(data.merchantId) &&
+             data.name is string && data.name.size() <= 150 &&
+             data.price is number && data.price >= 0 &&
+             data.quantity is number && data.quantity > 0 &&
+             data.addedAt is number;
+    }
+
+    // ===============================================================
+    // PILLAR 4 & 6: Collection Patterns
+    // ===============================================================
+
+    // Merchants
+    match /merchants/{merchantId} {
+      allow read: if true; 
+      
+      allow create: if isEmailVerified() && isValidId(merchantId) && isValidMerchant(incoming());
+      
+      allow update: if isEmailVerified() && (isOwner(existing().ownerId) || isAdmin()) && (
+        // Action: Profile Edit
+        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'address', 'phone', 'openingHours', 'location', 'rating', 'reviewCount']) &&
+         incoming().ownerId == existing().ownerId) ||
+        // Action: Plan Upgrade (Direct update allowed for Owner in this environment)
+        (isOwner(existing().ownerId) && incoming().diff(existing()).affectedKeys().hasOnly(['plan'])) ||
+        // Action: Admin Management
+        (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['plan', 'isSubscribed']))
+      );
+
+      allow delete: if isEmailVerified() && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    // Products
+    match /products/{productId} {
+      allow read: if true;
+      
+      function isMerchantOwner(mId) {
+        return get(/databases/$(database)/documents/merchants/$(mId)).data.ownerId == request.auth.uid;
+      }
+
+      allow create: if isEmailVerified() && isValidId(productId) && isValidProduct(incoming()) && isMerchantOwner(incoming().merchantId);
+      
+      allow update: if isEmailVerified() && isValidId(productId) && isMerchantOwner(existing().merchantId) && 
+                      isValidProduct(incoming()) &&
+                      incoming().merchantId == existing().merchantId; // IMMUTABLE PARENT
+                      
+      allow delete: if isEmailVerified() && isMerchantOwner(existing().merchantId);
+    }
+
+    // User Data (PII ISOLATION)
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      
+      match /chat_sessions/{sessionId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(sessionId) && isValidChatSession(incoming());
+
+        match /shopping_list/{itemId} {
+          allow read, delete: if isOwner(userId);
+          allow create, update: if isOwner(userId) && isValidId(itemId) && isValidShoppingItem(incoming());
+        }
+      }
+
+      match /settings/reminder {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && 
+                                incoming().date is string && 
+                                incoming().time is string;
+      }
+    }
+  }
+}
